@@ -15,8 +15,6 @@ install_maven() {
 }
 
 # Download Maven source from Apache
-#
-# TODO: Capture errors from curl.
 get_maven() {
 	local version=$1
 	local destdir=$2
@@ -26,6 +24,9 @@ get_maven() {
 	local url="$base/maven-$major/$version/binaries/apache-maven-$version-bin.tar.gz"
 
 	curl -fLC - --retry 3 --retry-delay 3 -o "$destdir/$version.tar.gz" "$url"
+	if [ ! $? -eq 0 ]; then
+		ASDF_MAVEN_ERROR="Could not download $url. Perhaps the version of Maven you're trying to install does not exist"
+	fi
 }
 
 # Build Maven, copy files and cleanup.
@@ -49,5 +50,8 @@ build_copy_cleanup() {
 #
 install_maven $ASDF_INSTALL_VERSION $ASDF_INSTALL_PATH
 
-[[ -z "$ASDF_MAVEN_ERROR" ]] || echo "ERROR: $ASDF_MAVEN_ERROR."
-unset ASDF_MAVEN_ERROR
+if [ -n "$ASDF_MAVEN_ERROR" ]; then
+	echo "ERROR: $ASDF_MAVEN_ERROR." > /dev/stderr
+	unset ASDF_MAVEN_ERROR
+	exit 1
+fi
